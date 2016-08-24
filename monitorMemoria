@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# crear por abelardo
+# el dia: dom nov 15 14:11:04 MST 2015
+# Comentario: Script para realizar informe de uso de memoria del sistema
+
+#guarda el valor de la memoria total, utilizada y disponible en archivos distintos en el directorio /home/abelardo/programas/monitoreo/datosMemoria
+
+#Memoria total...
+free | grep Mem | sed 's/\s\+/,/g' | cut -d , -f2 > /home/abelardo/programas/monitoreo/datosMemoria/total;
+#Memoria disponible...
+free | grep Mem | sed 's/\s\+/,/g' | cut -d , -f3 > /home/abelardo/programas/monitoreo/datosMemoria/usado;
+#Memoria libre...
+free | grep Mem | sed 's/\s\+/,/g' | cut -d , -f4 > /home/abelardo/programas/monitoreo/datosMemoria/libre;
+
+TOTAL=$(cat /home/abelardo/programas/monitoreo/datosMemoria/total)
+memLibre=$(cat /home/abelardo/programas/monitoreo/datosMemoria/libre)
+memUso=$(cat /home/abelardo/programas/monitoreo/datosMemoria/usado)
+
+#Crea un pequeño script de bc para halcular cuanto es el 80% de memoria del sistema y guardara en un archivo el reslutado.
+
+echo -e "$TOTAL*.8 \n quit" > /home/abelardo/programas/monitoreo/datosMemoria/evaluaLimite
+#aqui se hace el calculo con el archivo "evalua limite"
+bc -q /home/abelardo/programas/monitoreo/datosMemoria/evaluaLimite > /home/abelardo/programas/monitoreo/datosMemoria/limiteMem
+
+#guarda el limite de la memoria para hacer comprobacion, si... mas archivos
+limiteMemoria=$(cat /home/abelardo/programas/monitoreo/datosMemoria/limiteMem)
+#Linea para hacer pruebas, esto le da un valor ficticio al uso de memoria actual n_n
+#memUso=5000000
+
+echo -e "$limiteMemoria>$memUso \n quit" > /home/abelardo/programas/monitoreo/datosMemoria/comparaMemoria
+
+#comprueba esatdo de memoria 
+bc -q /home/abelardo/programas/monitoreo/datosMemoria/comparaMemoria > /home/abelardo/programas/monitoreo/datosMemoria/estadoMem 
+estadoMem=$(cat /home/abelardo/programas/monitoreo/datosMemoria/estadoMem)
+
+#si el resultado es 1 entonces esta bien, si el reslutado es 0 entonces el uso de memoria esta al 80% o mas.
+
+
+if [ $estadoMem == 0 ]; then
+	echo -e "`clear`Informe del estado de memoria \n\nCuidado! la memoria esta por encima del 80% D:\nMemoria total:\t$TOTAL KB\nNivel critico:\t$limiteMemoria KB\nMemoria en uso:\t$memUso KB\nMemoria libre:\t$memLibre KB\n\nAbelardo Gandara Gonzalez\nFecha:\t`date`\n" | mail -s "Informe sobre uso de memoria" abelardogy@gmail.com
+else
+	echo -e "`clear`Informe del estado de memoria \n\nEl uso de la memoria esta por debajo del 80%, andamos bien por ahora...\nMemoria total:\t$TOTAL KB\nNivel critico:\t$limiteMemoria KB\nMemoria en uso:\t$memUso KB\nMemoria libre:\t$memLibre KB\n\nAbelardo Gandara Gonzalez\nFecha:\t`date`\n"
+fi
+
+
+
+exit 0
